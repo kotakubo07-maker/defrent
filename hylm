@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>スタンド格ゲー</title>
+<style>
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// プレイヤー
+let player = {
+  x: 100,
+  y: 300,
+  vx: 0,
+  vy: 0,
+  hp: 100,
+  stand: false,
+  standTimer: 0
+};
+
+// 敵
+let enemy = {
+  x: 600,
+  y: 300,
+  hp: 100,
+  attackCooldown: 0
+};
+
+let keys = {};
+
+// 入力
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// 重力
+const gravity = 0.8;
+
+// 更新
+function update() {
+  // 左右移動
+  if (keys["ArrowLeft"]) player.vx = -5;
+  else if (keys["ArrowRight"]) player.vx = 5;
+  else player.vx = 0;
+
+  // ジャンプ
+  if (keys["ArrowUp"] && player.y >= 300) {
+    player.vy = -15;
+  }
+
+  player.vy += gravity;
+  player.x += player.vx;
+  player.y += player.vy;
+
+  if (player.y > 300) {
+    player.y = 300;
+    player.vy = 0;
+  }
+
+  // 攻撃
+  if (keys["z"]) {
+    if (Math.abs(player.x - enemy.x) < 80) {
+      enemy.hp -= 0.5;
+    }
+  }
+
+  // スタンド召喚
+  if (keys["x"] && player.standTimer <= 0) {
+    player.stand = true;
+    player.standTimer = 300;
+  }
+
+  if (player.stand) {
+    player.standTimer--;
+    if (Math.abs(player.x - enemy.x) < 120) {
+      enemy.hp -= 1;
+    }
+    if (player.standTimer <= 0) {
+      player.stand = false;
+    }
+  }
+
+  // 敵AI
+  if (enemy.x > player.x) enemy.x -= 2;
+  else enemy.x += 2;
+
+  enemy.attackCooldown--;
+  if (Math.abs(enemy.x - player.x) < 60 && enemy.attackCooldown <= 0) {
+    player.hp -= 5;
+    enemy.attackCooldown = 60;
+  }
+}
+
+// 描画
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 地面
+  ctx.fillStyle = "gray";
+  ctx.fillRect(0, 350, canvas.width, 50);
+
+  // プレイヤー
+  ctx.fillStyle = "blue";
+  ctx.fillRect(player.x, player.y, 40, 50);
+
+  // スタンド
+  if (player.stand) {
+    ctx.fillStyle = "cyan";
+    ctx.fillRect(player.x + 50, player.y, 30, 50);
+  }
+
+  // 敵
+  ctx.fillStyle = "red";
+  ctx.fillRect(enemy.x, enemy.y, 40, 50);
+
+  // HPバー
+  ctx.fillStyle = "white";
+  ctx.fillText("PLAYER HP: " + Math.floor(player.hp), 20, 20);
+  ctx.fillText("ENEMY HP: " + Math.floor(enemy.hp), 20, 40);
+}
+
+// メインループ
+function loop() {
+  update();
+  draw();
+
+  if (player.hp <= 0) {
+    alert("負け");
+    location.reload();
+  }
+  if (enemy.hp <= 0) {
+    alert("勝ち");
+    location.reload();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
